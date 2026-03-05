@@ -1,5 +1,7 @@
 import random
 import streamlit as st
+# FIX: Moved check_guess to logic_utils.py and imported here using Claude Code Agent mode
+from logic_utils import check_guess
 
 def get_range_for_difficulty(difficulty: str):
     if difficulty == "Easy":
@@ -28,23 +30,6 @@ def parse_guess(raw: str):
 
     return True, value, None
 
-
-def check_guess(guess, secret):
-    if guess == secret:
-        return "Win", "🎉 Correct!"
-
-    try:
-        if guess > secret:
-            return "Too High", "📈 Go HIGHER!"
-        else:
-            return "Too Low", "📉 Go LOWER!"
-    except TypeError:
-        g = str(guess)
-        if g == secret:
-            return "Win", "🎉 Correct!"
-        if g > secret:
-            return "Too High", "📈 Go HIGHER!"
-        return "Too Low", "📉 Go LOWER!"
 
 
 def update_score(current_score: int, outcome: str, attempt_number: int):
@@ -155,15 +140,19 @@ if submit:
     else:
         st.session_state.history.append(guess_int)
 
-        if st.session_state.attempts % 2 == 0:
-            secret = str(st.session_state.secret)
-        else:
-            secret = st.session_state.secret
+        secret = st.session_state.secret
 
-        outcome, message = check_guess(guess_int, secret)
+        # FIX: check_guess now returns just the outcome string (not a tuple); hint_messages
+        # maps outcomes to display text, replacing the old inline return values
+        outcome = check_guess(guess_int, secret)
 
+        hint_messages = {
+            "Win": "🎉 Correct!",
+            "Too High": "📉 Go LOWER!",
+            "Too Low": "📈 Go HIGHER!",
+        }
         if show_hint:
-            st.warning(message)
+            st.warning(hint_messages.get(outcome, ""))
 
         st.session_state.score = update_score(
             current_score=st.session_state.score,
